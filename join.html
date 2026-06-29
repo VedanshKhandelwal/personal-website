@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join the Challenge — Vedansh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, getDocs, query, where
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ── PASTE YOUR FIREBASE CONFIG HERE ──────────────────────────────────────
+  const firebaseConfig = {
+    apiKey:            "AIzaSyAKksZRweALDj8b70enNwxPciqUHBOl0kk",
+    authDomain:        "squad-tracker-9ff95.firebaseapp.com",
+    projectId:         "squad-tracker-9ff95",
+    storageBucket:     "squad-tracker-9ff95.firebasestorage.app",
+    messagingSenderId: "379399059318",
+    appId:             "1:379399059318:web:806a5496d087a6f6452c57"
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ── STEPS ─────────────────────────────────────────────────────────────────
+  function showStep(id) {
+    document.querySelectorAll('.step').forEach(s => s.style.display = 'none');
+    document.getElementById(id).style.display = 'block';
+  }
+
+  // ── FORM SUBMIT ───────────────────────────────────────────────────────────
+  document.getElementById('join-btn').addEventListener('click', async () => {
+    const name    = document.getElementById('join-name').value.trim();
+    const pin     = document.getElementById('join-pin').value.trim();
+    const pinConf = document.getElementById('join-pin-confirm').value.trim();
+    const err     = document.getElementById('join-error');
+
+    err.textContent = '';
+
+    // Validation
+    if (!name) { err.textContent = 'Enter your name.'; return; }
+    if (name.length < 2) { err.textContent = 'Name must be at least 2 characters.'; return; }
+    if (!/^\d{4,6}$/.test(pin)) { err.textContent = 'PIN must be 4–6 digits.'; return; }
+    if (pin !== pinConf) { err.textContent = 'PINs don\'t match.'; return; }
+
+    // Set loading state
+    const btn = document.getElementById('join-btn');
+    btn.textContent = 'Joining…';
+    btn.disabled = true;
+
+    try {
+      // Check if name already taken
+      const existing = await getDocs(
+        query(collection(db, 'friends'), where('nameLower', '==', name.toLowerCase()))
+      );
+
+      if (!existing.empty) {
+        err.textContent = 'That name is already taken. Try a nickname or add your initial.';
+        btn.textContent = 'Join the challenge →';
+        btn.disabled = false;
+        return;
+      }
+
+      // Save to Firestore
+      await addDoc(collection(db, 'friends'), {
+        name:      name,
+        nameLower: name.toLowerCase(),
+        pin:       pin,
+        joinedAt:  Date.now()
+      });
+
+      // Show success screen
+      document.getElementById('success-name').textContent = name;
+      showStep('step-success');
+
+    } catch (e) {
+      console.error(e);
+      err.textContent = 'Something went wrong. Check your connection and try again.';
+      btn.textContent = 'Join the challenge →';
+      btn.disabled = false;
+    }
+  });
+
+  // Allow Enter key to submit
+  ['join-name','join-pin','join-pin-confirm'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('join-btn').click();
+    });
+  });
+
+  // PIN digit only
+  ['join-pin','join-pin-confirm'].forEach(id => {
+    document.getElementById(id).addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+    });
+  });
+</script>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-navy:  #1B2A4A;
+    --color-red:   #E8450A;
+    --color-cream: #FAF5EB;
+    --color-gold:  #C9A84C;
+    --color-black: #1C1C1C;
+    --accent:      #E8450A;
+    --accent-h:    #F05A2A;
+    --gold:        #C9A84C;
+    --dk-text:     #FAF5EB;
+    --dk-muted:    #9BACC4;
+    --dk-dim:      #5C6E8A;
+    --dk-border:   rgba(250,245,235,0.08);
+    --card:        #243356;
+    --font-serif:  'DM Serif Display', Georgia, serif;
+    --font-sans:   'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-mono:   'JetBrains Mono', monospace;
+  }
+
+  body {
+    background: #1B2A4A;
+    color: var(--dk-text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1.5rem;
+  }
+
+  /* ── CHALLENGE BADGE ── */
+  .challenge-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 2.5rem;
+    text-align: center;
+  }
+
+  .badge-icon {
+    font-size: 2.8rem;
+    margin-bottom: 4px;
+  }
+
+  .badge-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .badge-title {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--dk-text);
+    line-height: 1.15;
+  }
+
+  .badge-sub {
+    font-size: 13px;
+    color: var(--dk-muted);
+    max-width: 320px;
+    line-height: 1.7;
+    margin-top: 4px;
+  }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: flex;
+    gap: 1px;
+    background: var(--dk-border);
+    border: 0.5px solid var(--dk-border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .stat-cell {
+    flex: 1;
+    background: var(--card);
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: var(--font-serif);
+    font-size: 1.6rem;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dk-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--card);
+    border: 0.5px solid var(--dk-border);
+    border-radius: 14px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .card-title {
+    font-family: var(--font-serif);
+    font-size: 1.3rem;
+    color: var(--dk-text);
+    margin-bottom: 0.35rem;
+  }
+
+  .card-sub {
+    font-size: 13px;
+    color: var(--dk-muted);
+    margin-bottom: 1.75rem;
+    line-height: 1.6;
+  }
+
+  /* ── FIELDS ── */
+  .field { margin-bottom: 1.1rem; }
+
+  .field-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dk-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .field-hint {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dk-dim);
+    margin-top: 5px;
+  }
+
+  .input {
+    width: 100%;
+    background: rgba(250,245,235,0.04);
+    border: 0.5px solid var(--dk-border);
+    border-radius: 7px;
+    color: var(--dk-text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    padding: 11px 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .input:focus { border-color: rgba(232,69,10,0.5); }
+  .input::placeholder { color: var(--dk-dim); }
+
+  /* ── BUTTON ── */
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: #FAF5EB;
+    border: none;
+    border-radius: 7px;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-top: 0.5rem;
+    letter-spacing: 0.01em;
+  }
+
+  .btn-primary:hover { background: var(--accent-h); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error-msg {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: #e87a7a;
+    min-height: 18px;
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  /* ── DIVIDER ── */
+  .or-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 1.5rem 0 1.25rem;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dk-dim);
+  }
+
+  .or-divider::before,
+  .or-divider::after {
+    content: '';
+    flex: 1;
+    height: 0.5px;
+    background: var(--dk-border);
+  }
+
+  .login-link {
+    display: block;
+    text-align: center;
+    font-size: 13px;
+    color: var(--dk-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .login-link:hover { color: var(--accent); }
+  .login-link span { color: var(--accent); }
+
+  /* ── SUCCESS STEP ── */
+  #step-success {
+    text-align: center;
+  }
+
+  .success-icon {
+    font-size: 3rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .success-title {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    color: var(--dk-text);
+    margin-bottom: 0.5rem;
+  }
+
+  .success-sub {
+    font-size: 14px;
+    color: var(--dk-muted);
+    max-width: 300px;
+    margin: 0 auto 1.75rem;
+    line-height: 1.7;
+  }
+
+  .success-steps {
+    background: rgba(250,245,235,0.04);
+    border: 0.5px solid var(--dk-border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    text-align: left;
+    margin-bottom: 1.75rem;
+  }
+
+  .success-step-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 0.6rem 0;
+    border-bottom: 0.5px solid var(--dk-border);
+    font-size: 13px;
+    color: var(--dk-muted);
+    line-height: 1.5;
+  }
+
+  .success-step-item:last-child { border-bottom: none; }
+
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(232,69,10,0.1);
+    border: 0.5px solid rgba(232,69,10,0.2);
+    border-radius: 4px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* ── GOLD RULE ── */
+  .gold-rule {
+    width: 40px;
+    height: 2px;
+    background: var(--gold);
+    border-radius: 1px;
+    margin: 0 auto 2rem;
+  }
+
+  /* ── FOOTER ── */
+  .page-footer {
+    margin-top: 2rem;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--dk-dim);
+    text-align: center;
+  }
+
+  .page-footer a {
+    color: var(--dk-dim);
+    text-decoration: none;
+  }
+
+  .page-footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+  <!-- Challenge intro -->
+  <div class="challenge-badge">
+    <div class="badge-icon">🧘</div>
+    <div class="badge-label">July 2025 · Squad Challenge</div>
+    <div class="badge-title">200 Min Plank Hold</div>
+    <div class="badge-sub">Hold a collective 200 minutes of plank between 1–31 July. Log every session. Every second counts.</div>
+  </div>
+
+  <div class="gold-rule"></div>
+
+  <div class="stats-row">
+    <div class="stat-cell">
+      <div class="stat-num">200</div>
+      <div class="stat-label">Min goal</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">31</div>
+      <div class="stat-label">Days</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-num">July</div>
+      <div class="stat-label">Month</div>
+    </div>
+  </div>
+
+  <!-- Step 1 — Join form -->
+  <div class="card step" id="step-join">
+    <div class="card-title">Join the challenge</div>
+    <div class="card-sub">Pick a name and a PIN you'll use to log in. Keep your PIN safe — you'll need it every time.</div>
+
+    <div class="field">
+      <label class="field-label" for="join-name">Your name</label>
+      <input class="input" type="text" id="join-name" placeholder="e.g. Rohan" autocomplete="off" maxlength="30">
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="join-pin">Choose a PIN</label>
+      <input class="input" type="password" id="join-pin" placeholder="4–6 digits" inputmode="numeric" maxlength="6">
+      <div class="field-hint">Numbers only · 4 to 6 digits</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="join-pin-confirm">Confirm PIN</label>
+      <input class="input" type="password" id="join-pin-confirm" placeholder="Same PIN again" inputmode="numeric" maxlength="6">
+    </div>
+
+    <button class="btn-primary" id="join-btn">Join the challenge →</button>
+    <div class="error-msg" id="join-error"></div>
+
+    <div class="or-divider">already joined?</div>
+    <a class="login-link" href="squad.html">Log in to your dashboard <span>→</span></a>
+  </div>
+
+  <!-- Step 2 — Success -->
+  <div class="card step" id="step-success" style="display:none;">
+    <div class="success-icon">🎉</div>
+    <div class="success-title">You're in, <span id="success-name"></span>!</div>
+    <div class="success-sub">You've joined the 200 min plank challenge. Here's what to do next.</div>
+
+    <div class="success-steps">
+      <div class="success-step-item">
+        <span class="step-num">01</span>
+        <span>Go to the squad login page and sign in with the name and PIN you just set.</span>
+      </div>
+      <div class="success-step-item">
+        <span class="step-num">02</span>
+        <span>Hit <strong style="color:var(--dk-text);">Start</strong> on the stopwatch when you drop into your plank. Hit <strong style="color:var(--dk-text);">Save</strong> when you're done.</span>
+      </div>
+      <div class="success-step-item">
+        <span class="step-num">03</span>
+        <span>Check the leaderboard to see how the squad is tracking toward 200 minutes.</span>
+      </div>
+    </div>
+
+    <a href="squad.html" class="btn-primary" style="display:block; text-align:center; text-decoration:none; padding:12px;">
+      Go to login →
+    </a>
+  </div>
+
+  <div class="page-footer">
+    <a href="squad.html">← Back to squad login</a>
+    &nbsp;·&nbsp;
+    <a href="index.html">vedanshkhandelwal.com</a>
+  </div>
+
+</body>
+</html>
