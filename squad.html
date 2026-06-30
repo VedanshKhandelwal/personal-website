@@ -122,9 +122,12 @@
     const grandTotal = sorted.reduce((s,u) => s + u.mins, 0);
 
     const pct = Math.min(100, (grandTotal / GOAL_MINS) * 100);
-    document.getElementById("squad-total-mins").textContent = grandTotal.toFixed(1);
-    document.getElementById("squad-pct").textContent = pct.toFixed(0) + "%";
-    document.getElementById("squad-bar-fill").style.width = pct + "%";
+    const totalEl = document.getElementById("squad-total-mins");
+    const pctEl   = document.getElementById("squad-pct");
+    const barEl   = document.getElementById("squad-bar-fill");
+    if (totalEl) totalEl.textContent = grandTotal.toFixed(1);
+    if (pctEl)   pctEl.textContent = pct.toFixed(0) + "%";
+    if (barEl)   barEl.style.width = pct + "%";
 
     const tbody = document.getElementById("lb-tbody");
     tbody.innerHTML = "";
